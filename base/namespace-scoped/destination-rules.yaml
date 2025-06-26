@@ -1,0 +1,21 @@
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: passthrough-proxy-dr
+spec:
+  # Use relative service name - will resolve to current namespace
+  host: passthrough-proxy
+  trafficPolicy:
+    tls:
+      mode: DISABLE
+---
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: traffic-collector-dr
+spec:
+  # Use relative service name - will resolve to current namespace
+  host: traffic-collector
+  trafficPolicy:
+    tls:
+      mode: DISABLE

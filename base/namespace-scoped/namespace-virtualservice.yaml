@@ -1,0 +1,28 @@
+# NOTE: For true namespace isolation, we recommend using Istio Sidecar configuration
+# This VirtualService captures traffic but cannot guarantee namespace isolation
+# without additional Sidecar configuration
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: wildcard-all-services
+spec:
+  exportTo:
+  - "."  # Only export within the namespace
+  gateways:
+  - mesh
+  hosts:
+  # This will capture all traffic, but combined with exportTo: "."
+  # it should only affect pods in this namespace
+  - "*.svc.cluster.local"
+  http:
+  # Route all other traffic through proxy
+  - route:
+    - destination:
+        host: passthrough-proxy
+        port:
+          number: 8080
+      headers:
+        request:
+          set:
+            x-original-host: "%REQ(:AUTHORITY)%"
+            x-forwarded-by: envoy-proxy

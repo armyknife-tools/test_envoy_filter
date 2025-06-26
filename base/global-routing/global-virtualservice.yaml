@@ -1,0 +1,39 @@
+# Global VirtualService for cluster-wide traffic capture
+# This will be deployed to istio-system namespace via overlay patch
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: global-traffic-capture
+spec:
+  exportTo:
+  - "*"  # Export to all namespaces
+  gateways:
+  - mesh
+  hosts:
+  - "*.svc.cluster.local"
+  http:
+  # Skip system namespaces
+  - match:
+    - uri:
+        prefix: "/"
+      headers:
+        host:
+          regex: "^[^.]+\\.(kube-system < /dev/null | kube-public|kube-node-lease|istio-system|istio-config|istio-operator|cert-manager|argocd|monitoring|logging)\\.svc\\.cluster\\.local$"
+    route:
+    - destination:
+        host: passthrough-proxy
+        port:
+          number: 8080
+  # Route all other traffic through proxy
+  - route:
+    - destination:
+        # This needs to be patched to the full service name
+        # by the prod overlay since it's cross-namespace
+        host: passthrough-proxy
+        port:
+          number: 8080
+      headers:
+        request:
+          set:
+            x-original-host: "%REQ(:AUTHORITY)%"
+            x-capture-namespace: "%REQ(Host)%"
